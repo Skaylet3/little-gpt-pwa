@@ -362,7 +362,7 @@ export default function HomePage() {
               size="icon"
               onClick={handleMenuClick}
               aria-label="Open menu"
-              className="text-gray-700 hover:bg-gray-100"
+              className="text-gray-700 hover:bg-gray-100 rounded-full"
             >
               <Menu className="size-6" />
             </Button>

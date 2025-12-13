@@ -207,7 +207,7 @@ export function Sidebar({
               size="icon"
               onClick={onClose}
               aria-label="Close sidebar"
-              className="text-gray-700 hover:bg-gray-100"
+              className="text-gray-700 hover:bg-gray-100 rounded-full"
             >
               <X className="size-6" />
             </Button>
