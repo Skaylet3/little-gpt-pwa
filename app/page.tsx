@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Menu, Bot, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Sidebar, type Conversation } from "@/app/widgets/Sidebar";
 
 // =============================================================================
 // TYPES (future: app/types/chat.ts)
@@ -42,28 +43,65 @@ const SUGGESTION_CARDS: SuggestionCard[] = [
   },
 ];
 
+const MOCK_CONVERSATIONS: Conversation[] = [
+  {
+    id: "1",
+    title: "Product Design Tips",
+    description: "Discussion about modern UI patterns",
+    timestamp: "2h ago",
+  },
+  {
+    id: "2",
+    title: "React Performance",
+    description: "Optimizing component rendering",
+    timestamp: "5h ago",
+  },
+  {
+    id: "3",
+    title: "API Architecture",
+    description: "RESTful design best practices",
+    timestamp: "1d ago",
+  },
+  {
+    id: "4",
+    title: "TypeScript Generics",
+    description: "Advanced type patterns explained",
+    timestamp: "2d ago",
+  },
+  {
+    id: "5",
+    title: "TypeScript Generics",
+    description: "Advanced type patterns explained",
+    timestamp: "2d ago",
+  },
+];
+
 // =============================================================================
 // HEADER COMPONENT (future: widgets/Header/Header.tsx)
 // =============================================================================
 
 interface HeaderProps {
-  onMenuClick?: () => void;
+  title: string;
+  leftAction?: React.ReactNode;
+  rightAction?: React.ReactNode;
+  className?: string;
 }
 
-function Header({ onMenuClick }: HeaderProps) {
+export function Header({ title, leftAction, rightAction, className }: HeaderProps) {
   return (
-    <header className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onMenuClick}
-        aria-label="Open menu"
-        className="text-gray-700 hover:bg-gray-100"
-      >
-        <Menu className="size-6" />
-      </Button>
-      <h1 className="text-xl font-bold text-blue-600">GPT Assistant</h1>
-      <div className="size-10" aria-hidden="true" />
+    <header
+      className={cn(
+        "flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4",
+        className
+      )}
+    >
+      <div className="flex size-10 items-center justify-start">
+        {leftAction}
+      </div>
+      <h1 className="text-xl font-bold text-blue-600">{title}</h1>
+      <div className="flex size-10 items-center justify-end">
+        {rightAction}
+      </div>
     </header>
   );
 }
@@ -74,7 +112,7 @@ function Header({ onMenuClick }: HeaderProps) {
 
 function WelcomeSection() {
   return (
-    <section className="flex flex-col items-center px-4 pt-12 text-center">
+    <section className="flex flex-col items-center px-4 pt-20 text-center">
       <div className="mb-6 flex size-16 items-center justify-center rounded-2xl bg-blue-50">
         <Bot className="size-8 text-blue-600" strokeWidth={1.5} />
       </div>
@@ -190,7 +228,7 @@ function MessageInput({
           disabled={disabled}
           aria-label="Message input"
           className={cn(
-            "h-12 w-full rounded-full bg-gray-100 px-5 text-base text-gray-900",
+            "h-12 w-full rounded-full bg-gray-100 px-5 text-base font-medium text-gray-900",
             "placeholder:text-neutral-500",
             "outline-none",
             "caret-neutral-950",
@@ -234,7 +272,7 @@ function Footer({
   isLoading = false,
 }: FooterProps) {
   return (
-    <footer className="fixed bottom-0 w-full border-t border-gray-200 bg-white px-4 pb-6 pt-4">
+    <footer className="sticky bottom-0 w-full border-t border-gray-200 bg-white px-4 pb-6 pt-4">
       <MessageInput
         value={inputValue}
         onChange={onInputChange}
@@ -257,11 +295,31 @@ function Footer({
 export default function HomePage() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState<string | undefined>("1");
 
   // Handler stubs for future business logic integration
   const handleMenuClick = () => {
-    // TODO: Open sidebar/drawer
-    console.log("Menu clicked");
+    setIsSidebarOpen(true);
+  };
+
+  const handleSidebarClose = () => {
+    setIsSidebarOpen(false);
+  };
+
+  const handleConversationClick = (conversation: Conversation) => {
+    setActiveConversationId(conversation.id);
+    setIsSidebarOpen(false);
+    // TODO: Load conversation messages
+    console.log("Selected conversation:", conversation.id);
+  };
+
+  const handleNewChat = () => {
+    setActiveConversationId(undefined);
+    setIsSidebarOpen(false);
+    setInputValue("");
+    // TODO: Create new conversation
+    console.log("New chat started");
   };
 
   const handleSuggestionClick = (suggestion: SuggestionCard) => {
@@ -283,26 +341,52 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-white">
-      {/* Header */}
-      <Header onMenuClick={handleMenuClick} />
-
-      {/* Main Content - scrollable */}
-      <main className="flex flex-1 flex-col overflow-y-auto">
-        <WelcomeSection />
-        <SuggestionsList
-          suggestions={SUGGESTION_CARDS}
-          onSuggestionClick={handleSuggestionClick}
-        />
-      </main>
-
-      {/* Footer - fixed at bottom */}
-      <Footer
-        inputValue={inputValue}
-        onInputChange={setInputValue}
-        onSubmit={handleSubmit}
-        isLoading={isLoading}
+    <>
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={handleSidebarClose}
+        conversations={MOCK_CONVERSATIONS}
+        activeConversationId={activeConversationId}
+        onConversationClick={handleConversationClick}
+        onNewChat={handleNewChat}
       />
-    </div>
+
+      <div className="flex min-h-dvh flex-col bg-white">
+        {/* Header */}
+        <Header
+          title="GPT Assistant"
+          leftAction={
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleMenuClick}
+              aria-label="Open menu"
+              className="text-gray-700 hover:bg-gray-100"
+            >
+              <Menu className="size-6" />
+            </Button>
+          }
+          className="fixed w-full z-30"
+        />
+
+        {/* Main Content - scrollable */}
+        <main className="flex flex-1 flex-col overflow-y-auto">
+          <WelcomeSection />
+          <SuggestionsList
+            suggestions={SUGGESTION_CARDS}
+            onSuggestionClick={handleSuggestionClick}
+          />
+        </main>
+
+        {/* Footer - fixed at bottom */}
+        <Footer
+          inputValue={inputValue}
+          onInputChange={setInputValue}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+        />
+      </div>
+    </>
   );
 }
