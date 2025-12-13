@@ -1,14 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { Menu, Bot, ArrowUp } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Menu, Bot, ArrowUp, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Sidebar, type Conversation } from "@/app/widgets/Sidebar";
 
 // =============================================================================
 // TYPES (future: app/types/chat.ts)
 // =============================================================================
+
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}
 
 interface SuggestionCard {
   id: string;
@@ -191,6 +198,97 @@ function SuggestionsList({
 }
 
 // =============================================================================
+// MESSAGE BUBBLE (future: entities/MessageBubble/MessageBubble.tsx)
+// =============================================================================
+
+interface MessageBubbleProps {
+  message: Message;
+}
+
+function MessageBubble({ message }: MessageBubbleProps) {
+  const isUser = message.role === "user";
+
+  return (
+    <div
+      className={cn(
+        "flex gap-3",
+        isUser ? "flex-row-reverse" : "flex-row"
+      )}
+    >
+      {/* Avatar */}
+      <div
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-full",
+          isUser ? "bg-blue-600" : "bg-gray-200"
+        )}
+      >
+        {isUser ? (
+          <User className="size-4 text-white" />
+        ) : (
+          <Bot className="size-4 text-gray-600" />
+        )}
+      </div>
+
+      {/* Message content */}
+      <div
+        className={cn(
+          "max-w-[80%] rounded-2xl px-4 py-2",
+          isUser
+            ? "bg-blue-600 text-white"
+            : "bg-gray-100 text-gray-900"
+        )}
+      >
+        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// CHAT VIEW (future: features/ChatView/ChatView.tsx)
+// =============================================================================
+
+interface ChatViewProps {
+  messages: Message[];
+  isLoading?: boolean;
+}
+
+function ChatView({ messages, isLoading }: ChatViewProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  return (
+    <ScrollArea className="flex-1 min-h-0" ref={scrollRef}>
+      <div className="flex flex-col gap-4 p-4 pt-20">
+        {messages.map((message) => (
+          <MessageBubble key={message.id} message={message} />
+        ))}
+
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex gap-3">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-200">
+              <Bot className="size-4 text-gray-600" />
+            </div>
+            <div className="flex items-center gap-1 rounded-2xl bg-gray-100 px-4 py-3">
+              <span className="size-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]" />
+              <span className="size-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]" />
+              <span className="size-2 animate-bounce rounded-full bg-gray-400" />
+            </div>
+          </div>
+        )}
+      </div>
+    </ScrollArea>
+  );
+}
+
+// =============================================================================
 // MESSAGE INPUT (future: features/MessageInput/MessageInput.tsx)
 // =============================================================================
 
@@ -297,6 +395,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>("1");
+  const [messages, setMessages] = useState<Message[]>([]);
 
   // Handler stubs for future business logic integration
   const handleMenuClick = () => {
@@ -318,8 +417,7 @@ export default function HomePage() {
     setActiveConversationId(undefined);
     setIsSidebarOpen(false);
     setInputValue("");
-    // TODO: Create new conversation
-    console.log("New chat started");
+    setMessages([]);
   };
 
   const handleSuggestionClick = (suggestion: SuggestionCard) => {
@@ -327,17 +425,58 @@ export default function HomePage() {
   };
 
   const handleSubmit = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isLoading) return;
 
-    setIsLoading(true);
-    // TODO: Integrate with useChat hook for API calls
-    console.log("Submitting:", inputValue);
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: inputValue.trim(),
+    };
 
-    // Simulate API delay for testing
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
+    // Add user message to chat
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInputValue("");
-    setIsLoading(false);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: updatedMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("API Error:", data);
+        throw new Error(data.details || data.error || "Failed to get response");
+      }
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.content,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      // Add error message
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -372,11 +511,17 @@ export default function HomePage() {
 
         {/* Main Content - scrollable */}
         <main className="flex flex-1 flex-col overflow-y-auto">
-          <WelcomeSection />
-          <SuggestionsList
-            suggestions={SUGGESTION_CARDS}
-            onSuggestionClick={handleSuggestionClick}
-          />
+          {messages.length === 0 ? (
+            <>
+              <WelcomeSection />
+              <SuggestionsList
+                suggestions={SUGGESTION_CARDS}
+                onSuggestionClick={handleSuggestionClick}
+              />
+            </>
+          ) : (
+            <ChatView messages={messages} isLoading={isLoading} />
+          )}
         </main>
 
         {/* Footer - fixed at bottom */}
