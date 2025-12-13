@@ -234,7 +234,7 @@ function Footer({
   isLoading = false,
 }: FooterProps) {
   return (
-    <footer className="fixed bottom-0 border-t border-gray-200 bg-white px-4 pb-6 pt-4">
+    <footer className="fixed bottom-0 w-full border-t border-gray-200 bg-white px-4 pb-6 pt-4">
       <MessageInput
         value={inputValue}
         onChange={onInputChange}
