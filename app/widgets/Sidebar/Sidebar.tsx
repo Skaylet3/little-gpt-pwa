@@ -132,12 +132,12 @@ interface NewChatButtonProps {
 
 function NewChatButton({ onClick }: NewChatButtonProps) {
   return (
-    <div className="shrink-0 border-t border-gray-200 bg-gray-50 p-4">
+    <div className="shrink-0 border-t border-gray-200 bg-gray-50 py-4 px-4">
       <Button
         type="button"
         onClick={onClick}
         className={cn(
-          "w-full rounded-full",
+          "w-full rounded-full py-3",
           "bg-blue-600 text-base font-semibold text-white",
           "hover:bg-blue-700",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
