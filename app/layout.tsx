@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   themeColor: "#0a0a0a",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Little GPT",
   },
   icons: {
