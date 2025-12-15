@@ -1,3 +1,4 @@
+// @ts-expect-error - Generated after prisma generate
 import { PrismaClient } from "./generated/prisma";
 
 const globalForPrisma = globalThis as unknown as {
