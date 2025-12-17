@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icons/GPTIcon192.png",
+      "src": "/icons/pwaIcons/GPTIcon192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/GPTIcon512.png",
+      "src": "/icons/pwaIcons/GPTIcon512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

@@ -98,7 +98,7 @@ export function Header({ title, leftAction, rightAction, className }: HeaderProp
   return (
     <header
       className={cn(
-        "flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4",
+        "sticky top-0 flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4",
         className
       )}
     >
@@ -120,9 +120,13 @@ export function Header({ title, leftAction, rightAction, className }: HeaderProp
 function WelcomeSection() {
   return (
     <section className="flex flex-col items-center px-4 pt-20 text-center">
+
+      {/* place 'Bot' icon to separate component in the future */}
+
       <div className="mb-6 flex size-16 items-center justify-center rounded-2xl bg-blue-50">
         <Bot className="size-8 text-blue-600" strokeWidth={1.5} />
       </div>
+
       <h2 className="mb-2 text-2xl font-bold text-gray-900">
         How can I help you today?
       </h2>
