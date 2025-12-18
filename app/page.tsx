@@ -1,21 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { observer } from "mobx-react-lite";
 import { Menu, Bot, ArrowUp, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Sidebar, type Conversation } from "@/app/widgets/Sidebar";
-
-// =============================================================================
-// TYPES (future: app/types/chat.ts)
-// =============================================================================
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
+import { chatStore } from "@/app/stores/ChatStore";
+import type { Message } from "@/app/types/chat";
 
 interface SuggestionCard {
   id: string;
@@ -252,12 +245,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
 // CHAT VIEW (future: features/ChatView/ChatView.tsx)
 // =============================================================================
 
-interface ChatViewProps {
-  messages: Message[];
-  isLoading?: boolean;
-}
-
-function ChatView({ messages, isLoading }: ChatViewProps) {
+const ChatView = observer(() => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -265,17 +253,17 @@ function ChatView({ messages, isLoading }: ChatViewProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [chatStore.messages.length]);
 
   return (
     <ScrollArea className="flex-1 min-h-0" ref={scrollRef}>
       <div className="flex flex-col gap-4 p-4 pt-20">
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+        {chatStore.messages.map((message, index) => (
+          <MessageBubble key={index} message={message} />
         ))}
 
         {/* Loading indicator */}
-        {isLoading && (
+        {chatStore.isLoading && (
           <div className="flex gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-200">
               <Bot className="size-4 text-gray-600" />
@@ -290,7 +278,7 @@ function ChatView({ messages, isLoading }: ChatViewProps) {
       </div>
     </ScrollArea>
   );
-}
+});
 
 // =============================================================================
 // MESSAGE INPUT (future: features/MessageInput/MessageInput.tsx)
@@ -360,26 +348,14 @@ function MessageInput({
 // FOOTER (future: widgets/Footer/Footer.tsx)
 // =============================================================================
 
-interface FooterProps {
-  inputValue: string;
-  onInputChange: (value: string) => void;
-  onSubmit: () => void;
-  isLoading?: boolean;
-}
-
-function Footer({
-  inputValue,
-  onInputChange,
-  onSubmit,
-  isLoading = false,
-}: FooterProps) {
+const Footer = observer(() => {
   return (
     <footer className="sticky bottom-0 w-full border-t border-gray-200 bg-white px-4 pb-6 pt-4">
       <MessageInput
-        value={inputValue}
-        onChange={onInputChange}
-        onSubmit={onSubmit}
-        disabled={isLoading}
+        value={chatStore.inputValue}
+        onChange={(value) => chatStore.setInputValue(value)}
+        onSubmit={() => chatStore.sendMessage()}
+        disabled={chatStore.isLoading}
       />
       <p className="mt-3 text-center text-xs text-gray-400">
         AI can make mistakes.
@@ -388,18 +364,16 @@ function Footer({
       </p>
     </footer>
   );
-}
+});
 
 // =============================================================================
 // MAIN PAGE (future: pages/HomePage/HomePage.tsx)
 // =============================================================================
 
-export default function HomePage() {
-  const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+const HomePage = observer(() => {
+  // UI state (not moved to store - local to this page)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>("1");
-  const [messages, setMessages] = useState<Message[]>([]);
 
   // Handler stubs for future business logic integration
   const handleMenuClick = () => {
@@ -420,67 +394,12 @@ export default function HomePage() {
   const handleNewChat = () => {
     setActiveConversationId(undefined);
     setIsSidebarOpen(false);
-    setInputValue("");
-    setMessages([]);
+    chatStore.clearInput();
+    chatStore.clearMessages();
   };
 
   const handleSuggestionClick = (suggestion: SuggestionCard) => {
-    setInputValue(suggestion.title);
-  };
-
-  const handleSubmit = async () => {
-    if (!inputValue.trim() || isLoading) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: inputValue.trim(),
-    };
-
-    // Add user message to chat
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
-    setInputValue("");
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: updatedMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error("API Error:", data);
-        throw new Error(data.details || data.error || "Failed to get response");
-      }
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: data.content,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error("Chat error:", error);
-      // Add error message
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
+    chatStore.setInputValue(suggestion.title);
   };
 
   return (
@@ -515,7 +434,7 @@ export default function HomePage() {
 
         {/* Main Content - scrollable */}
         <main className="flex flex-1 flex-col overflow-y-auto">
-          {messages.length === 0 ? (
+          {!chatStore.hasMessages ? (
             <>
               <WelcomeSection />
               <SuggestionsList
@@ -524,18 +443,15 @@ export default function HomePage() {
               />
             </>
           ) : (
-            <ChatView messages={messages} isLoading={isLoading} />
+            <ChatView />
           )}
         </main>
 
         {/* Footer - fixed at bottom */}
-        <Footer
-          inputValue={inputValue}
-          onInputChange={setInputValue}
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-        />
+        <Footer />
       </div>
     </>
   );
-}
+});
+
+export default HomePage;
