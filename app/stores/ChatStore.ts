@@ -188,4 +188,5 @@ class ChatStore {
   }
 }
 
+export { ChatStore };
 export const chatStore = new ChatStore();
