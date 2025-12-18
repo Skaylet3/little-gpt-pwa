@@ -43,38 +43,6 @@ const SUGGESTION_CARDS: SuggestionCard[] = [
   },
 ];
 
-const MOCK_CONVERSATIONS: Conversation[] = [
-  {
-    id: "1",
-    title: "Product Design Tips",
-    description: "Discussion about modern UI patterns",
-    timestamp: "2h ago",
-  },
-  {
-    id: "2",
-    title: "React Performance",
-    description: "Optimizing component rendering",
-    timestamp: "5h ago",
-  },
-  {
-    id: "3",
-    title: "API Architecture",
-    description: "RESTful design best practices",
-    timestamp: "1d ago",
-  },
-  {
-    id: "4",
-    title: "TypeScript Generics",
-    description: "Advanced type patterns explained",
-    timestamp: "2d ago",
-  },
-  {
-    id: "5",
-    title: "TypeScript Generics",
-    description: "Advanced type patterns explained",
-    timestamp: "2d ago",
-  },
-];
 
 // =============================================================================
 // HEADER COMPONENT (future: widgets/Header/Header.tsx)
@@ -373,7 +341,11 @@ const Footer = observer(() => {
 const HomePage = observer(() => {
   // UI state (not moved to store - local to this page)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeConversationId, setActiveConversationId] = useState<string | undefined>("1");
+
+  // Load conversations on mount
+  useEffect(() => {
+    chatStore.loadConversations();
+  }, []);
 
   // Handler stubs for future business logic integration
   const handleMenuClick = () => {
@@ -385,17 +357,15 @@ const HomePage = observer(() => {
   };
 
   const handleConversationClick = (conversation: Conversation) => {
-    setActiveConversationId(conversation.id);
+    chatStore.loadConversation(conversation.id);
     setIsSidebarOpen(false);
-    // TODO: Load conversation messages
-    console.log("Selected conversation:", conversation.id);
   };
 
   const handleNewChat = () => {
-    setActiveConversationId(undefined);
-    setIsSidebarOpen(false);
+    chatStore.setCurrentConversation(null);
     chatStore.clearInput();
     chatStore.clearMessages();
+    setIsSidebarOpen(false);
   };
 
   const handleSuggestionClick = (suggestion: SuggestionCard) => {
@@ -408,8 +378,8 @@ const HomePage = observer(() => {
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={handleSidebarClose}
-        conversations={MOCK_CONVERSATIONS}
-        activeConversationId={activeConversationId}
+        conversations={chatStore.conversations}
+        activeConversationId={chatStore.currentConversationId ?? undefined}
         onConversationClick={handleConversationClick}
         onNewChat={handleNewChat}
       />

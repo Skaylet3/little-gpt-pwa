@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -105,10 +107,16 @@ export function PageFooter() {
 // =============================================================================
 
 export default function AuthPage() {
-  // TODO: Replace with actual NextAuth signIn
-  const handleGoogleSignIn = () => {
-    console.log("Google sign in clicked");
-    // signIn("google", { callbackUrl: "/" });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await signIn("google", { callbackUrl: "/" });
+    } catch (error) {
+      console.error("Sign in error:", error);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -121,7 +129,7 @@ export default function AuthPage() {
         <AuthWelcomeSection />
 
         {/* Sign In Button */}
-          <GoogleSignInButton onClick={handleGoogleSignIn} />
+        <GoogleSignInButton onClick={handleGoogleSignIn} disabled={isLoading} />
 
         {/* Spacer to push footer down */}
       </main>

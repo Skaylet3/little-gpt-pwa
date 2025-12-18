@@ -5,9 +5,19 @@ export interface Message {
 }
 
 export interface ChatRequest {
-  messages: Pick<Message, "role" | "content">[];
+  conversationId: string;
+  message: string;
 }
 
 export interface ChatResponse {
+  id: string;
+  role: "assistant";
   content: string;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
 }
