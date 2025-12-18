@@ -342,9 +342,12 @@ const HomePage = observer(() => {
   // UI state (not moved to store - local to this page)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Load conversations on mount
+  // Load conversations on mount, and restore current conversation if stored
   useEffect(() => {
     chatStore.loadConversations();
+    if (chatStore.currentConversationId) {
+      chatStore.loadConversation(chatStore.currentConversationId);
+    }
   }, []);
 
   // Handler stubs for future business logic integration

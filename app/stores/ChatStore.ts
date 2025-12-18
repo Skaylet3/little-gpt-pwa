@@ -22,6 +22,9 @@ class ChatStore {
 
   constructor() {
     makeAutoObservable(this);
+    if (typeof window !== "undefined") {
+      this.currentConversationId = sessionStorage.getItem("currentConversationId");
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -42,6 +45,13 @@ class ChatStore {
 
   setCurrentConversation(id: string | null) {
     this.currentConversationId = id;
+    if (typeof window !== "undefined") {
+      if (id) {
+        sessionStorage.setItem("currentConversationId", id);
+      } else {
+        sessionStorage.removeItem("currentConversationId");
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -72,7 +82,7 @@ class ChatStore {
 
       runInAction(() => {
         this.conversations.unshift(conversation);
-        this.currentConversationId = conversation.id;
+        this.setCurrentConversation(conversation.id);
         this.messages = [];
       });
 
@@ -90,7 +100,7 @@ class ChatStore {
       const messages = await getConversationMessages(conversationId);
 
       runInAction(() => {
-        this.currentConversationId = conversationId;
+        this.setCurrentConversation(conversationId);
         this.messages = messages;
       });
     } catch (error) {
